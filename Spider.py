@@ -1,7 +1,6 @@
 import time
 import requests
 import re
-from bs4 import BeautifulSoup
 from concurrent import futures
 
 class Zhihu():
@@ -63,8 +62,8 @@ class Zhihu():
     
     def downloadConcurrent(self, imgUrls):
         tasks = min(self.maxWorkders, len(imgUrls))
-        with futures.ThreadPoolExecutor(tasks) as executor:
-            res = executor.map(self.saveImg, imgUrls)
+        with futures.ThreadPoolExecuttor(tasks) as executor:
+            res = executor.map(self.saveImg, imgUrls, timeout=5)
         return len(list(res))
     
     def saveImg(self, imgUrl):
