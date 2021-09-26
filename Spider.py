@@ -2,28 +2,35 @@ import time
 import requests
 import re
 import os
+import argparse
 from concurrent import futures
 
 
 class Zhihu():
-    headers = {
-        'User-Agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.70 Safari/537.36",
-        'Accept-Encoding': 'gzip, deflate'
-    }
-    maxWorkders = 20
-    cnt = 0
 
-    def auto(self, qIDs):
-        imgUrls = self.getImgUrls(qIDs)
+    def __init__(self, qIDs, numPics, maxSize, minSize, numWorkers):
+        self.qIDs = qIDs
+        self.numPics = numPics
+        self.maxSize = maxSize
+        self.minSize = minSize
+        self.numWorkers = numWorkers
+        self.cnt = 0
+        self.headers = {
+            'User-Agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.70 Safari/537.36",
+            'Accept-Encoding': 'gzip, deflate'
+        }
+
+    def auto(self):
+        imgUrls = self.getImgUrls()
         self.downloadConcurrent(imgUrls)
 
-    def getImgUrls(self, qIDs):
+    def getImgUrls(self):
         limit = 10  # 当页条数
         offset = 0  # 偏移量
         picReg = re.compile(
             '<noscript>.*?data-original="(.*?)".*?</noscript>', re.S)   # 用于匹配回答内容中的图片
         picUrls = []
-        for qID in qIDs:
+        for qID in self.qIDs:
             # 知乎问题地址
             answer_url = f'https://www.zhihu.com/api/v4/questions/{qID}/answers'
             while True:
@@ -43,7 +50,7 @@ class Zhihu():
                     picUrls += re.findall(picReg, content)
                 paging = resp.get('paging')
                 # is_end  = True 已到最后一页
-                if paging['is_end'] or len(picUrls) > 2000:
+                if paging['is_end'] or len(picUrls) > self.numPics:
                     print('图片链接爬取完毕')
                     break
                 offset += limit
@@ -55,12 +62,15 @@ class Zhihu():
     def downloadConcurrent(self, imgUrls):
         if not os.path.isdir("./data"):
             os.mkdir("./data")
-        tasks = min(self.maxWorkders, len(imgUrls))
+        tasks = min(self.numWorkers, len(imgUrls))
         with futures.ThreadPoolExecutor(tasks) as executor:
             res = executor.map(self.saveImg, imgUrls, timeout=5)
         return len(list(res))
 
     def saveImg(self, imgUrl):
+        length = requests.head(imgUrl).headers["Content-Length"]
+        if not self.minSize < int(length)//1000 < self.maxSize:
+            return
         r = requests.get(imgUrl, headers=self.headers)
         if r.status_code == 200:
             bin = r.content
@@ -75,9 +85,21 @@ class Zhihu():
 
 
 if __name__ == "__main__":
-    # qIDs = ["319371540"]
-    qIDs = ["482559530"]
+    ap = argparse.ArgumentParser(
+        description="This is a script that can download images from Zhihu.")
+    ap.add_argument("-q", "--qIDs", nargs="+", required=True, default=[])
+    ap.add_argument("-n", "--num_pic",
+                    metavar="The number of pictures (Default: 2000)", type=int, default=2000)
+    ap.add_argument(
+        "--max_size", metavar="The maximum size(KB) limitation of pictures (Default: 10000)", type=int, default=10000)
+    ap.add_argument(
+        "--min_size", metavar="The minimum size(KB) limitation of pictures (Default: 200)", type=int, default=200)
+    ap.add_argument(
+        "--num_workers", metavar="The number of workers (Default: 20)", type=int, default=20)
+    args = ap.parse_args()
+
     start = time.time()
-    spider = Zhihu()
-    spider.auto(qIDs)
+    spider = Zhihu(args.qIDs, args.num_pic, args.max_size,
+                   args.min_size, args.num_workers)
+    spider.auto()
     print(f"Time cost {time.time()-start}")

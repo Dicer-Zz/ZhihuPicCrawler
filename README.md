@@ -12,13 +12,30 @@
 
 # Usage
 
+```shell
+usage: Spider.py [-h] -q QIDS [QIDS ...] [-n The number of pictures Default: 2000)]
+                 [--max_size The maximum size(KB) limitation of pictures (Default: 10000)]
+                 [--min_size The minimum size(KB) limitation of pictures (Default: 200)]
+                 [--num_workers The number of workers (Default: 20]
+
+This is a script that can download images from Zhihu.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -q QIDS [QIDS ...], --qIDs QIDS [QIDS ...]
+  -n The number of pictures (Default: 2000), --num_pic The number of pictures (Default: 2000)
+  --max_size The maximum size(KB) limitation of pictures (Default: 10000)
+  --min_size The minimum size(KB) limitation of pictures (Default: 200)
+  --num_workers The number of workers (Default: 20)
+```
+
 通过知乎问题链接可以获取qID（问题ID）比如 https://www.zhihu.com/question/488737569 其中 488737569 就是这个问题的唯一ID。
 然后更改`__main__`中的qIDs。
 
 然后执行：
 
 ``` shell
-python Spider.py
+python Spider.py -q 488737569 ...
 ```
 
 # Reference
