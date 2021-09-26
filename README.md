@@ -13,7 +13,6 @@
 # Usage
 
 通过知乎问题链接可以获取qID（问题ID）比如 https://www.zhihu.com/question/488737569 其中 488737569 就是这个问题的唯一ID。
-然后更改`__main__`中的qIDs。
 
 然后执行：
 
