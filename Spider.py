@@ -1,12 +1,14 @@
 import time
 import requests
 import re
+import os
 from concurrent import futures
+
 
 class Zhihu():
     headers = {
-            'User-Agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.70 Safari/537.36",
-            'Accept-Encoding': 'gzip, deflate'
+        'User-Agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.70 Safari/537.36",
+        'Accept-Encoding': 'gzip, deflate'
     }
     maxWorkders = 20
     cnt = 0
@@ -18,10 +20,12 @@ class Zhihu():
     def getImgUrls(self, qIDs):
         limit = 10  # 当页条数
         offset = 0  # 偏移量
-        picReg = re.compile('<noscript>.*?data-original="(.*?)".*?</noscript>', re.S)   # 用于匹配回答内容中的图片
+        picReg = re.compile(
+            '<noscript>.*?data-original="(.*?)".*?</noscript>', re.S)   # 用于匹配回答内容中的图片
         picUrls = []
         for qID in qIDs:
-            answer_url = f'https://www.zhihu.com/api/v4/questions/{qID}/answers'   # 知乎问题地址
+            # 知乎问题地址
+            answer_url = f'https://www.zhihu.com/api/v4/questions/{qID}/answers'
             while True:
                 # 请求参数
                 data = {
@@ -29,7 +33,8 @@ class Zhihu():
                     'limit': limit,
                     'offset': offset,
                 }
-                response = requests.get(answer_url, params=data, headers=self.headers)
+                response = requests.get(
+                    answer_url, params=data, headers=self.headers)
                 resp = response.json()
                 answers = resp.get('data')  # 当前页所有回答
                 for answer in answers:
@@ -46,7 +51,7 @@ class Zhihu():
         picUrls = [picUrl[:picUrl.rindex('?')] for picUrl in picUrls]
         picUrls = list(set(picUrls))
         return picUrls
-    
+
     def downloadImage(self, imgUrls):
         cnt = 0
         for imgUrl in imgUrls:
@@ -59,13 +64,15 @@ class Zhihu():
                     file.write(bin)
                     cnt += 1
         print(f"{cnt} images saved.")
-    
+
     def downloadConcurrent(self, imgUrls):
+        if not os.path.isdir("./data"):
+            os.mkdir("./data")
         tasks = min(self.maxWorkders, len(imgUrls))
         with futures.ThreadPoolExecutor(tasks) as executor:
             res = executor.map(self.saveImg, imgUrls, timeout=5)
         return len(list(res))
-    
+
     def saveImg(self, imgUrl):
         r = requests.get(imgUrl, headers=self.headers)
         if r.status_code == 200:
@@ -78,6 +85,7 @@ class Zhihu():
                 print(f"{self.cnt} images saved.")
         else:
             print(f"Download Fail. Status code: {r.status_code}")
+
 
 if __name__ == "__main__":
     # qIDs = ["319371540"]
