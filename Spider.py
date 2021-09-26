@@ -62,7 +62,7 @@ class Zhihu():
     
     def downloadConcurrent(self, imgUrls):
         tasks = min(self.maxWorkders, len(imgUrls))
-        with futures.ThreadPoolExecuttor(tasks) as executor:
+        with futures.ThreadPoolExecutor(tasks) as executor:
             res = executor.map(self.saveImg, imgUrls, timeout=5)
         return len(list(res))
     
