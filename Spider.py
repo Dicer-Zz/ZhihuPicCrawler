@@ -52,19 +52,6 @@ class Zhihu():
         picUrls = list(set(picUrls))
         return picUrls
 
-    def downloadImage(self, imgUrls):
-        cnt = 0
-        for imgUrl in imgUrls:
-            r = requests.get(imgUrl, headers=self.headers)
-            print(imgUrl, r.status_code)
-            if r.status_code == 200:
-                bin = r.content
-                fileName = imgUrl[imgUrl.rindex('/')+1:]
-                with open("./data/" + fileName, 'wb') as file:
-                    file.write(bin)
-                    cnt += 1
-        print(f"{cnt} images saved.")
-
     def downloadConcurrent(self, imgUrls):
         if not os.path.isdir("./data"):
             os.mkdir("./data")
