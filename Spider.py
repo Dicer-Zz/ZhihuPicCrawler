@@ -32,7 +32,8 @@ class Zhihu():
         self.maxSize = maxSize
         self.minSize = minSize
         self.numWorkers = numWorkers
-        self.cnt = 0
+        self.imgCounter = 0
+        self.imgSize = 0
         self.headers = {
             'User-Agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.70 Safari/537.36",
             'Accept-Encoding': 'gzip, deflate'
@@ -41,8 +42,16 @@ class Zhihu():
     def auto(self):
         """Automatic download
         """
+        startTime = time.time()
         imgUrls = self.getImgUrls()
         self.downloadConcurrent(imgUrls)
+        metric = "MB" if self.imgSize > 1024 else "KB"
+        size = self.imgSize//1024 if self.imgSize > 1024 else self.imgSize
+        costTime = time.time() - startTime
+        print(
+            f"{self.imgCounter} images downloaded. Image size: {size} {metric}.")
+        print(
+            f"Time cost: {costTime:.3f}s. {size/costTime:.3f} {metric}/s.")
 
     def getImgUrls(self):
         limit = 10  # 当页条数
@@ -70,7 +79,7 @@ class Zhihu():
                     picUrls += re.findall(picReg, content)
                 paging = resp.get('paging')
                 # is_end  = True 已到最后一页
-                if paging['is_end'] or len(picUrls) > self.numPics:
+                if paging['is_end'] or len(picUrls) > self.numPics*3:
                     print('图片链接爬取完毕')
                     break
                 offset += limit
@@ -107,18 +116,23 @@ class Zhihu():
         imgUrl : string
             Url of one image.
         """
-        length = requests.head(imgUrl).headers["Content-Length"]
-        if not self.minSize < int(length)//1000 < self.maxSize:
+        if self.imgCounter > self.numPics:  # Maybe wrong due to concurrent.
             return
         r = requests.get(imgUrl, headers=self.headers)
         if r.status_code == 200:
+            length = r.headers["Content-Length"]
+            if not self.minSize < int(length)//1024 < self.maxSize:
+                return
             bin = r.content
             fileName = imgUrl[imgUrl.rindex('/')+1:]
             with open("./data/" + fileName, 'wb') as file:
                 file.write(bin)
-            self.cnt += 1
-            if self.cnt % 50 == 0:
-                print(f"{self.cnt} images saved.")
+            self.imgCounter += 1
+            self.imgSize += int(length)//1024
+            if self.imgCounter % 50 == 0:
+                metric = "MB" if self.imgSize > 1024 else "KB"
+                size = self.imgSize//1024 if self.imgSize > 1024 else self.imgSize
+                print(f"{self.imgCounter} images saved ({size} {metric}).")
         else:
             print(f"Download Fail. Status code: {r.status_code}")
 
@@ -127,7 +141,7 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser(
         description="This is a script that can download images from Zhihu.")
     ap.add_argument("-q", "--qIDs", nargs="+", required=True, default=[])
-    ap.add_argument("-n", "--num_pic",
+    ap.add_argument("--num_pic",
                     metavar="The number of pictures (Default: 2000)", type=int, default=2000)
     ap.add_argument(
         "--max_size", metavar="The maximum size(KB) limitation of pictures (Default: 10000)", type=int, default=10000)
@@ -137,8 +151,6 @@ if __name__ == "__main__":
         "--num_workers", metavar="The number of workers (Default: 20)", type=int, default=20)
     args = ap.parse_args()
 
-    start = time.time()
     spider = Zhihu(args.qIDs, args.num_pic, args.max_size,
                    args.min_size, args.num_workers)
     spider.auto()
-    print(f"Time cost {time.time()-start}")
