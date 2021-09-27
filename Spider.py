@@ -7,8 +7,26 @@ from concurrent import futures
 
 
 class Zhihu():
+    """
+    Class of ZhihuImgSpider.
+    """
 
     def __init__(self, qIDs, numPics, maxSize, minSize, numWorkers):
+        """initialization
+
+        Parameters
+        ----------
+        qIDs : sequence of strings
+            Ids of question.
+        numPics : int
+            Maximum number of picture crawled.
+        maxSize : int
+            Maximum size of picture.
+        minSize : int
+            Minimum size of picture.
+        numWorkers : int
+            Number of threads.
+        """
         self.qIDs = qIDs
         self.numPics = numPics
         self.maxSize = maxSize
@@ -21,6 +39,8 @@ class Zhihu():
         }
 
     def auto(self):
+        """Automatic download
+        """
         imgUrls = self.getImgUrls()
         self.downloadConcurrent(imgUrls)
 
@@ -60,6 +80,18 @@ class Zhihu():
         return picUrls
 
     def downloadConcurrent(self, imgUrls):
+        """Download pictures concurrently.
+
+        Parameters
+        ----------
+        imgUrls : sequence of strings
+            Urls of images.
+
+        Returns
+        -------
+        int
+            Number of results.
+        """
         if not os.path.isdir("./data"):
             os.mkdir("./data")
         tasks = min(self.numWorkers, len(imgUrls))
@@ -68,6 +100,13 @@ class Zhihu():
         return len(list(res))
 
     def saveImg(self, imgUrl):
+        """Download one image from url
+
+        Parameters
+        ----------
+        imgUrl : string
+            Url of one image.
+        """
         length = requests.head(imgUrl).headers["Content-Length"]
         if not self.minSize < int(length)//1000 < self.maxSize:
             return
