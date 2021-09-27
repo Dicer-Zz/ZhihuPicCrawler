@@ -54,12 +54,13 @@ class Zhihu():
             f"Time cost: {costTime:.3f}s. {size/costTime:.3f} {metric}/s.")
 
     def getImgUrls(self):
-        limit = 10  # 当页条数
-        offset = 0  # 偏移量
+        
         picReg = re.compile(
             '<noscript>.*?data-original="(.*?)".*?</noscript>', re.S)   # 用于匹配回答内容中的图片
         picUrls = []
         for qID in self.qIDs:
+            limit = 10  # 当页条数
+            offset = 0  # 偏移量
             # 知乎问题地址
             answer_url = f'https://www.zhihu.com/api/v4/questions/{qID}/answers'
             while True:
