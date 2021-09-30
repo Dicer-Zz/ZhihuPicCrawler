@@ -38,6 +38,9 @@ optional arguments:
   --min_size The minimum size(KB) limitation of pictures (Default: 200)
   --num_workers The number of workers (Default: 20)
 ```
+# 已知问题
+由于控制下载图片数量的变量没有使用互斥锁，因此图片数量有可能超过限制的数量。
+但是考虑到使用互斥锁（猜想）可能会降低爬虫速度，因此暂时不考虑更改。
 
 # Reference
 https://github.com/python3xxx/zhihu_spider/blob/master/zhihu_spider.py
